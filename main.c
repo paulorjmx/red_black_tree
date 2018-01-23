@@ -10,11 +10,11 @@ int main(int argc, char *argv[])
 	// rbtree_insert(&t, 3);
 	// rbtree_insert(&t, 2);
 	// rbtree_insert(&t, 1);
-	// rbtree_insert(&t, 30);
-	// rbtree_insert(&t, 22);
-	// rbtree_insert(&t, 6);
-	// rbtree_insert(&t, 2);
-	// rbtree_insert(&t, 1);
+	// printf("%d\n", rbtree_predecessor(t, 1));
+	// printf("%d\n", rbtree_sucessor(t, 1));
+	// printf("%d\n", rbtree_max(t));
+	// printf("%d\n", rbtree_min(t));
+	// rbtree_inorder(t);
 	// rbtree_preorder(t);
 	// printf("\n",);
 	// printf("%d\n", rbtree_predecessor(t, 1));
@@ -63,25 +63,25 @@ int main(int argc, char *argv[])
 		}
 		else if(opt == 4)
 		{
-			printf("%d\n", rbtree_max(t));
+			printf("%d\n", rbtree_maximum(t));
 		}
 		else if(opt == 5)
 		{
-			printf("%d\n", rbtree_min(t));
+			printf("%d\n", rbtree_minimum(t));
 		}
 		else if(opt == 6)
 		{
-			rbtree_preorder(t);
+			rbtree_print_preorder(t);
 			printf("\n");
 		}
 		else if(opt == 7)
 		{
-			rbtree_inorder(t);
+			rbtree_print_inorder(t);
 			printf("\n");
 		}
 		else
 		{
-			rbtree_postorder(t);
+			rbtree_print_postorder(t);
 			printf("\n");
 		}
 	}
