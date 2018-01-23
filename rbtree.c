@@ -1,333 +1,422 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "inc/rbtree.h"
 
-struct rbtree
+void rbtree_rotate_left(RBTREE **node, RBTREE **tree);
+void rbtree_rotate_right(RBTREE **node, RBTREE **tree);
+
+struct node
 {
     int n;
-    struct rbtree *left, *right, *parent;
-    char color; // BLACK: 0, RED: 1
+    char color;
+    struct node *parent, *left, *right;
 };
 
-RBTREE *rbtree_create(int n)
+RBTREE *rbtree_create(int value)
 {
     RBTREE *new = NULL;
     new = (RBTREE *) malloc(sizeof(RBTREE));
-    if(new == NULL)
+    if(new != NULL)
     {
-        printf("ERRO: NAO FOI POSSIVEL CRIAR A ARVORE!\n");
-    }
-    else
-    {
-        new->n = n;
-        new->left = NULL;
-        new->right = NULL;
-        new->parent = NULL;
+        new->n = value;
         new->color = '0';
+        new->parent = NULL;
+        new->left = NULL;
+        new->right = NULL;
     }
-
+    else
+    {
+        printf("ERROR: Could not possible create the binary search tree data structure.\n");
+    }
     return new;
 }
 
-RBTREE *rbtree_newnode(int n) // Utility function to create a new node
+RBTREE *rbtree_create_node(int value)
 {
     RBTREE *new = NULL;
     new = (RBTREE *) malloc(sizeof(RBTREE));
-    if(new == NULL)
+    if(new != NULL)
     {
-        printf("ERRO: NAO FOI POSSIVEL CRIAR A ARVORE!\n");
-    }
-    else
-    {
-        new->n = n;
+        new->n = value;
+        new->color = '1';
         new->left = NULL;
         new->right = NULL;
         new->parent = NULL;
-        new->color = '1'; // Create a new node with red color
-    }
-
-    return new;
-}
-
-void rbtree_insertbst(RBTREE **tree, int n)
-{
-    if((*tree) != NULL)
-    {
-        if(n < (*tree)->n)
-        {
-            if((*tree)->left != NULL)
-            {
-                (*tree)->left->parent = (*tree);
-                rbtree_insertbst(&(*tree)->left, n);
-            }
-            else
-            {
-                (*tree)->left = rbtree_newnode(n);
-                (*tree)->left->parent = (*tree);
-            }
-        }
-        else
-        {
-            if((*tree)->right != NULL)
-            {
-                (*tree)->right->parent = (*tree);
-                rbtree_insertbst(&(*tree)->right, n);
-            }
-            else
-            {
-                (*tree)->right = rbtree_newnode(n);
-                (*tree)->right->parent = (*tree);
-            }
-        }
     }
     else
     {
-        printf("ERRO: A ARVORE NAO EXISTE!\n");
+        printf("ERROR: Could not possible create the node.\n");
     }
+    return new;
 }
 
-RBTREE *rbtree_search(RBTREE *tree, int n)
+void rbtree_rotate_left(RBTREE **node, RBTREE **tree)
 {
-    if(tree != NULL)
+    RBTREE *ptr = (*node)->right;
+    (*node)->right = ptr->left;
+    if(ptr->left != NULL)
     {
-        if(n > tree->n)
-        {
-            return rbtree_search(tree->right, n);
-        }
-        else if(n < tree->n)
-        {
-            return rbtree_search(tree->left, n);
-        }
-        else
-        {
-            return tree;
-        }
+        ptr->left->parent = (*node);
     }
+    ptr->parent = (*node)->parent;
+    if((*node) == (*tree))
+    {
+        (*tree) = ptr;
+    }
+    else if((*node)->n == (*node)->parent->left->n)
+    {
+        (*node)->parent->left = ptr;
+    }
+    else
+    {
+        (*node)->parent->right = ptr;
+    }
+    (*node)->parent = ptr;
+    ptr->left = (*node);
+    // (*node) = ptr;
 }
 
-RBTREE *rbtree_rotate_left(RBTREE *root)
+void rbtree_rotate_right(RBTREE **node, RBTREE **tree)
 {
-    char tmp_color = -1;
-    RBTREE *tmp = root->right;
-    root->right = tmp->left;
-    tmp->left = root;
-    tmp->parent = root->parent;
-    root->parent = tmp;
-    tmp_color = tmp->color;
-    tmp->color = root->color;
-    root->color = tmp_color;
-    return tmp;
+    RBTREE *ptr = (*node)->left;
+    (*node)->left = ptr->right;
+    if(ptr->right != NULL)
+    {
+        ptr->right->parent = (*node);
+    }
+    ptr->parent = (*node)->parent;
+    if((*node) == (*tree))
+    {
+        (*tree) = ptr;
+    }
+    else if((*node)->n == (*node)->parent->left->n)
+    {
+        (*node)->parent->left = ptr;
+        ptr->parent = (*node)->parent;
+    }
+    else
+    {
+        (*node)->parent->right = ptr;
+        ptr->parent = (*node)->parent;
+    }
+    (*node)->parent = ptr;
+    ptr->right = (*node);
+    // (*node) = ptr;
 }
 
-RBTREE *rbtree_rotate_right(RBTREE *root)
-{
-    char tmp_color = -1;
-    RBTREE *tmp = root->left;
-    root->left = tmp->right;
-    tmp->right = root;
-    tmp->parent = root->parent;
-    root->parent = tmp;
-    tmp_color = tmp->color;
-    tmp->color = root->color;
-    root->color = tmp_color;
-    return tmp;
-}
-
-void rbtree_insert(RBTREE **tree, int n)
+void rbtree_insert(RBTREE **tree, int value)
 {
     if((*tree) != NULL)
     {
-        // char tmp_color = '0';
-        RBTREE *ptr = NULL;
-        rbtree_insertbst(tree, n);
-        ptr = rbtree_search((*tree), n);
-        while((ptr->parent != NULL) && (ptr->parent->color == '1') && (ptr->color != '0'))
+        RBTREE *ptr = NULL, *pnt = NULL, *uncle = NULL, *grandparent = NULL;
+        ptr = (*tree);
+        while(ptr != NULL)
         {
-            if((ptr->parent->parent->left != NULL) && (ptr->parent->n == ptr->parent->parent->left->n)) // If parent of ptr is the left child of grandparent
+            pnt = ptr;
+            if(value < ptr->n)
             {
-                // Case 1
-                if(ptr->parent->parent->right != NULL && ptr->parent->parent->right->color == '1') // If uncle of ptr is red, change the color of parent, grandparent and uncle
+                ptr = ptr->left;
+            }
+            else
+            {
+                ptr = ptr->right;
+            }
+        }
+        if(value < pnt->n)
+        {
+            pnt->left = rbtree_create_node(value);
+            pnt->left->parent = pnt;
+            ptr = pnt->left;
+        }
+        else
+        {
+            pnt->right = rbtree_create_node(value);
+            pnt->right->parent = pnt;
+            ptr = pnt->right;
+        }
+        // Perform the fix
+        while(ptr->parent != NULL && ptr->parent->color == '1')
+        {
+            pnt = ptr->parent;
+            grandparent = ptr->parent->parent;
+            if(ptr->parent->parent->left != NULL && (ptr->parent->n == ptr->parent->parent->left->n))
+            {
+                uncle = ptr->parent->parent->right;
+                if(uncle != NULL && uncle->color == '1')
                 {
-                    ptr->parent->color = '0'; // Parent color
-                    ptr->parent->parent->right->color = '0'; // Uncle Color
-                    ptr->parent->parent->color = '1'; // Grandparent Color;
-                    ptr = ptr->parent->parent; // Up to the grandparent
-                }
-                // Case 2
-                else if(ptr->parent->left != NULL && (ptr->parent->left->n == ptr->n)) // 'n' is the left child of his parent
-                {
-                    if(ptr->parent->parent == (*tree))
-                        (*tree) = rbtree_rotate_right(ptr->parent->parent);
-                    else
-                        ptr->parent->parent->parent->left = rbtree_rotate_right(ptr->parent->parent);
-                    ptr = ptr->parent;
+                    ptr->parent->parent->color = '1';
+                    ptr->parent->color = '0';
+                    uncle->color = '0';
+                    ptr = grandparent;
                 }
                 else
                 {
-                    ptr->parent->parent->left = rbtree_rotate_left(ptr->parent);
-                    ptr->parent->parent->left = rbtree_rotate_right(ptr->parent);
-                    ptr = ptr->parent;
+                    if(ptr->parent->right != NULL && ptr->n == ptr->parent->right->n)
+                    {
+                        rbtree_rotate_left(&pnt, tree);
+                    }
+                    rbtree_rotate_right(&grandparent, tree);
+                    grandparent->parent->color = '0';
+                    grandparent->color = '1';
                 }
-            }
-            else // 'n' if the right child of his parent
-            {
-                // Case 1
-                if(ptr->parent->parent->left != NULL && ptr->parent->parent->left->color == '1') // If uncle of ptr is red, change the color of parent, grandparent and uncle
-                {
-                    ptr->parent->color = '0'; // Parent color
-                    ptr->parent->parent->left->color = '0'; // Uncle Color
-                    ptr->parent->parent->color = '1'; // Grandparent Color;
-                    ptr = ptr->parent->parent; // Up to the grandparent
-                }
-                // Case 2
-                else if(ptr->parent->right != NULL && (ptr->parent->right->n == ptr->n)) // 'n' is the right child of his parent
-                {
-                    if(ptr->parent->parent == (*tree))
-                        (*tree) = rbtree_rotate_right(ptr->parent->parent);
-                    else
-                        ptr->parent->parent->parent->right = rbtree_rotate_left(ptr->parent->parent);
-                    ptr = ptr->parent;
-                }
-                else // 'n' if the left child of his parent
-                {
-                    ptr->parent->parent->right = rbtree_rotate_right(ptr->parent);
-                    ptr->parent->parent->right = rbtree_rotate_left(ptr->parent);
-                    ptr = ptr->parent;
-                }
-            }
-        }
-        (*tree)->color = '0'; // Keep black color on root
-    }
-}
-
-void rbtree_inorder(RBTREE *tree)
-{
-    if(tree != NULL)
-    {
-        rbtree_inorder(tree->left);
-        printf("%d ", tree->n);
-        rbtree_inorder(tree->right);
-    }
-}
-void rbtree_preorder(RBTREE *tree)
-{
-    if(tree != NULL)
-    {
-        printf("%d ", tree->n);
-        rbtree_preorder(tree->left);
-        rbtree_preorder(tree->right);
-    }
-}
-
-void rbtree_postorder(RBTREE *tree)
-{
-    if(tree != NULL)
-    {
-        rbtree_postorder(tree->left);
-        rbtree_postorder(tree->right);
-        printf("%d ", tree->n);
-    }
-}
-
-int rbtree_predecessor(RBTREE *tree, int n)
-{
-    if(tree != NULL)
-    {
-        RBTREE *node = rbtree_search(tree, n), *tmp = NULL;
-        if(node->left != NULL)
-        {
-            return rbtree_max(node->left);
-        }
-        else
-        {
-            tmp = node->parent;
-            while(tmp != NULL && tmp->parent->n < node->n)
-            {
-                tmp = tmp->parent;
-            }
-            if(tmp != NULL)
-            {
-                return tmp->n;
             }
             else
             {
-                return -1;
+                uncle = ptr->parent->parent->left;
+                if(uncle != NULL && uncle->color == '1')
+                {
+                    ptr->parent->parent->color = '1';
+                    ptr->parent->color = '0';
+                    uncle->color = '0';
+                    ptr = grandparent;
+                }
+                else
+                {
+                    if(ptr->parent->left != NULL && ptr->n == ptr->parent->left->n)
+                    {
+                        rbtree_rotate_right(&pnt, tree);
+                    }
+                    rbtree_rotate_left(&grandparent, tree);
+                    grandparent->parent->color = '0';
+                    grandparent->color = '1';
+                }
             }
         }
+        (*tree)->color = '0';
     }
     else
     {
+        printf("ERROR: The tree is empty.\n");
+    }
+}
+
+int rbtree_minimum(RBTREE *tree)
+{
+    if(tree != NULL)
+    {
+        RBTREE *ptr = tree;
+        while(ptr->left != NULL)
+        {
+            ptr = ptr->left;
+        }
+        return ptr->n;
+    }
+    else
+    {
+        printf("ERROR: The data structure is empty.\n");
         return -1;
     }
 }
 
-int rbtree_sucessor(RBTREE *tree, int n)
+int rbtree_maximum(RBTREE *tree)
 {
     if(tree != NULL)
     {
-        RBTREE *node = rbtree_search(tree, n), *tmp = NULL;
-        if(node->right != NULL)
+        RBTREE *ptr = tree;
+        while(ptr->right != NULL)
         {
-            return rbtree_min(node->right);
+            ptr = ptr->right;
         }
-        else
-        {
-            tmp = node->parent;
-            while(tmp != NULL && tmp->n > node->n)
-            {
-                tmp = tmp->parent;
-            }
-            if(tmp != NULL)
-            {
-                return tmp->n;
-            }
-            else
-            {
-                return -1;
-            }
-        }
+        return ptr->n;
     }
     else
     {
+        printf("ERROR: The data structure is empty.\n");
         return -1;
     }
 }
 
-int rbtree_min(RBTREE *tree)
+void rbtree_delete_node(RBTREE **tree, int value)
 {
-    if(tree != NULL)
+    if((*tree) != NULL)
     {
-        if(tree->left != NULL)
+        RBTREE **ptr = tree;
+        while((*ptr)->left != NULL || (*ptr)->right != NULL)
         {
-            rbtree_min(tree->left);
+            if(value < (*ptr)->n)
+            {
+                ptr = &(*ptr)->left;
+            }
+            else if(value > (*ptr)->n)
+            {
+                ptr = &(*ptr)->right;
+            }
+            else
+            {
+                break;
+            }
+        }
+        if((*ptr) != NULL)
+        {
+            if((*ptr)->left == NULL && (*ptr)->right == NULL)
+            {
+                free((*ptr));
+                (*ptr) = NULL;
+            }
+            else
+            {
+                if((*ptr)->left == NULL)
+                {
+                    (*ptr)->n = (*ptr)->right->n;
+                    free((*ptr)->right);
+                    (*ptr)->right = NULL;
+                }
+                else if((*ptr)->right == NULL)
+                {
+                    (*ptr)->n = (*ptr)->left->n;
+                    free((*ptr)->left);
+                    (*ptr)->left = NULL;
+                }
+                else
+                {
+                    (*ptr)->n = rbtree_minimum((*ptr)->right);
+                    rbtree_delete_node(&((*ptr)->right), (*ptr)->n);
+                }
+            }
         }
         else
         {
-            return tree->n;
+            printf("ERROR: The value %d doesn't exists.\n", value);
         }
     }
     else
     {
-        return 0;
+        printf("ERROR: The data structure doesn't exists.\n");
     }
 }
 
-int rbtree_max(RBTREE *tree)
+int rbtree_predecessor(RBTREE *tree, int value)
 {
+    int pred = -1;
     if(tree != NULL)
     {
-        if(tree->right != NULL)
+        RBTREE *ptr = tree;
+        while(ptr->left != NULL || ptr->right != NULL)
         {
-            rbtree_max(tree->right);
+            if(value < ptr->n)
+            {
+                ptr = ptr->left;
+            }
+            else if(value > ptr->n)
+            {
+                ptr = ptr->right;
+            }
+            else
+            {
+                break;
+            }
+        }
+        if(ptr != NULL)
+        {
+            if(ptr->left != NULL)
+            {
+                pred = rbtree_maximum(ptr->left);
+            }
+            else
+            {
+                pred = ptr->n;
+                while(ptr->parent != NULL && ptr->parent->n > ptr->n)
+                {
+                    ptr = ptr->parent;
+                }
+                if(ptr->parent != NULL && ptr->parent->n < pred)
+                {
+                    pred = ptr->parent->n;
+                }
+                else
+                {
+                    pred = -1;
+                }
+            }
         }
         else
         {
-            return tree->n;
+            printf("ERROR: The value %d is not on the tree.\n", value);
         }
     }
-    else
+    return pred;
+}
+
+int rbtree_sucessor(RBTREE *tree, int value)
+{
+    int suc = -1;
+    if(tree != NULL)
     {
-        return 0;
+        RBTREE *ptr = tree;
+        while(ptr->left != NULL || ptr->right != NULL)
+        {
+            if(value < ptr->n)
+            {
+                ptr = ptr->left;
+            }
+            else if(value > ptr->n)
+            {
+                ptr = ptr->right;
+            }
+            else
+            {
+                break;
+            }
+        }
+        if(ptr != NULL)
+        {
+            if(ptr->right != NULL)
+            {
+                suc = rbtree_minimum(ptr->right);
+            }
+            else
+            {
+                suc = ptr->n;
+                while(ptr->parent != NULL && ptr->parent->n < ptr->n)
+                {
+                    ptr = ptr->parent;
+                }
+                if(ptr->parent != NULL && ptr->parent->n > suc)
+                {
+                    suc = ptr->parent->n;
+                }
+                else
+                {
+                    suc = -1;
+                }
+            }
+        }
+        else
+        {
+            printf("ERROR: The value %d is not on the tree.\n", value);
+        }
+    }
+    return suc;
+}
+
+void rbtree_print_preorder(RBTREE *tree)
+{
+    if(tree != NULL)
+    {
+        printf("%d ", tree->n, tree->color);
+        rbtree_print_preorder(tree->left);
+        rbtree_print_preorder(tree->right);
+    }
+}
+
+void rbtree_print_inorder(RBTREE *tree)
+{
+    if(tree != NULL)
+    {
+        rbtree_print_inorder(tree->left);
+        printf("%d ", tree->n);
+        rbtree_print_inorder(tree->right);
+    }
+}
+
+void rbtree_print_postorder(RBTREE *tree)
+{
+    if(tree != NULL)
+    {
+        rbtree_print_postorder(tree->left);
+        rbtree_print_postorder(tree->right);
+        printf("%d ", tree->n);
     }
 }
 
@@ -335,17 +424,37 @@ void rbtree_delete(RBTREE **tree)
 {
     if((*tree) != NULL)
     {
-        if((*tree)->left == NULL && (*tree)->right == NULL)
+        rbtree_delete(&(*tree)->left);
+        rbtree_delete(&(*tree)->right);
+        free((*tree));
+        (*tree) = NULL;
+    }
+}
+
+void rbtree_level_order(RBTREE *tree)
+{
+    if(tree != NULL)
+    {
+        int i = 0, j = 0;
+        RBTREE *queue[10000];
+        memset(queue, 0, sizeof(queue));
+        queue[j] = tree;
+        while(queue[i] != 0)
         {
-            free((*tree));
-            (*tree) = NULL;
+            printf("%d ", queue[i]->n);
+            if(queue[i]->left != NULL)
+            {
+                queue[++j] = queue[i]->left;
+            }
+            if(queue[i]->right != NULL)
+            {
+                queue[++j] = queue[i]->right;
+            }
+            i++;
         }
-        else
-        {
-            rbtree_delete(&((*tree)->left));
-            rbtree_delete(&((*tree)->right));
-            free((*tree));
-            (*tree) = NULL;
-        }
+    }
+    else
+    {
+        printf("ERROR: The data structure doesn't exists.\n");
     }
 }
