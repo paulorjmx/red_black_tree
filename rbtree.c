@@ -136,7 +136,8 @@ void rbtree_insert(RBTREE **tree, int value)
             ptr = pnt->right;
         }
         // Perform the fix
-        while(ptr->parent != NULL && ptr->parent->color == '1')
+        while(ptr->parent != NULL && ptr->parent->color == '1' && 
+        ptr->color != '0')
         {
             pnt = ptr->parent;
             grandparent = ptr->parent->parent;
